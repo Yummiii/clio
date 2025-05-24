@@ -1,8 +1,8 @@
 use clio::*;
 
-#[cfg(feature = "clap-parser")]
+#[cfg(feature = "clap-parse")]
 use clap::Parser;
-#[cfg(feature = "clap-parser")]
+#[cfg(feature = "clap-parse")]
 #[derive(Parser)]
 #[clap(name = "cat")]
 struct Opt {
@@ -15,14 +15,14 @@ struct Opt {
     output: Output,
 }
 
-#[cfg(feature = "clap-parser")]
+#[cfg(feature = "clap-parse")]
 fn main() {
     let mut opt = Opt::parse();
 
     std::io::copy(&mut opt.input, &mut opt.output).unwrap();
 }
 
-#[cfg(not(feature = "clap-parser"))]
+#[cfg(not(feature = "clap-parse"))]
 fn main() {
     for arg in std::env::args_os() {
         let mut input = Input::new(&arg).unwrap();

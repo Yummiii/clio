@@ -1,9 +1,9 @@
 use crate::{Error, Result};
 use pipe::{PipeBufWriter, PipeReader};
 use std::fmt::{self, Debug};
-use std::io::{Error as IoError, ErrorKind, Read, Result as IoResult, Write};
-use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
+use std::io::{Error as IoError, Read, Result as IoResult, Write};
 use std::sync::Mutex;
+use std::sync::mpsc::{Receiver, SyncSender, sync_channel};
 use std::thread::spawn;
 
 pub struct HttpWriter {
@@ -26,9 +26,7 @@ struct SnitchingReader {
 impl Read for SnitchingReader {
     fn read(&mut self, buffer: &mut [u8]) -> IoResult<usize> {
         if !self.connected {
-            self.tx
-                .send(Ok(()))
-                .map_err(|e| IoError::new(ErrorKind::Other, e))?;
+            self.tx.send(Ok(())).map_err(IoError::other)?;
             self.connected = true;
         }
         self.read.read(buffer)
@@ -41,19 +39,22 @@ impl HttpWriter {
 
         let mut req = ureq::put(url);
         if let Some(size) = size {
-            req = req.set("content-length", &size.to_string());
+            req = req.header("content-length", &size.to_string());
         }
 
         let (done_tx, rx) = sync_channel(0);
-        let snitch = SnitchingReader {
+        let mut snitch = SnitchingReader {
             read,
             connected: false,
             tx: done_tx.clone(),
         };
 
         spawn(move || {
+            let mut buf = vec![];
+            snitch.read_to_end(&mut buf).ok();
+
             done_tx
-                .send(req.send(snitch).map(|_| ()).map_err(|e| e.into()))
+                .send(req.send(buf).map(|_| ()).map_err(|e| e.into()))
                 .unwrap();
         });
 
@@ -102,14 +103,19 @@ impl HttpReader {
         let resp = ureq::get(url).call()?;
 
         let length = resp
-            .header("content-length")
+            .headers()
+            .get("Content-Length")
+            .and_then(|x| x.to_str().ok())
             .and_then(|x| x.parse::<u64>().ok());
+
+        let (_, body) = resp.into_parts();
+
         Ok(HttpReader {
             length,
             #[cfg(not(feature = "clap-parse"))]
-            read: Box::new(resp.into_reader()),
+            read: Box::new(body.into_reader()),
             #[cfg(feature = "clap-parse")]
-            read: Mutex::new(Box::new(resp.into_reader())),
+            read: Mutex::new(Box::new(body.into_reader())),
         })
     }
 
@@ -128,7 +134,7 @@ impl Read for HttpReader {
     fn read(&mut self, buffer: &mut [u8]) -> IoResult<usize> {
         self.read
             .lock()
-            .map_err(|_| IoError::new(ErrorKind::Other, "Error locking HTTP reader"))?
+            .map_err(|_| IoError::other("Error locking HTTP reader"))?
             .read(buffer)
     }
 }
@@ -142,9 +148,9 @@ impl Debug for HttpReader {
 impl From<ureq::Error> for Error {
     fn from(err: ureq::Error) -> Self {
         match err {
-            ureq::Error::Status(code, resp) => Error::Http {
+            ureq::Error::StatusCode(code) => Error::Http {
                 code,
-                message: resp.status_text().to_owned(),
+                message: err.to_string(),
             },
             _ => Error::Http {
                 code: 499,

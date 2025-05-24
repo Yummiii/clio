@@ -3,7 +3,7 @@
 //!
 //! This module is only compiled if you enable the clap-parse feature
 
-use crate::{assert_exists, assert_is_dir, assert_not_dir, ClioPath, Error, Result};
+use crate::{ClioPath, Error, Result, assert_exists, assert_is_dir, assert_not_dir};
 use clap::builder::TypedValueParser;
 use clap::error::ErrorKind;
 use std::ffi::OsStr;
@@ -159,12 +159,12 @@ impl TypedValueParser for OsStrParser<ClioPath> {
 mod tests {
     use super::*;
     use std::fs::{create_dir, write};
-    use tempfile::{tempdir, TempDir};
+    use tempfile::{TempDir, tempdir};
 
     fn temp() -> TempDir {
         let tmp = tempdir().expect("could not make tmp dir");
-        create_dir(&tmp.path().join("dir")).expect("could not create dir");
-        write(&tmp.path().join("file"), "contents").expect("could not create dir");
+        create_dir(tmp.path().join("dir")).expect("could not create dir");
+        write(tmp.path().join("file"), "contents").expect("could not create dir");
         tmp
     }
 
@@ -182,9 +182,11 @@ mod tests {
             .validate(tmp.path().join("dir/").as_os_str())
             .unwrap();
 
-        assert!(validator
-            .validate(tmp.path().join("dir/missing").as_os_str())
-            .is_err());
+        assert!(
+            validator
+                .validate(tmp.path().join("dir/missing").as_os_str())
+                .is_err()
+        );
     }
 
     #[test]
@@ -198,12 +200,16 @@ mod tests {
             .validate(tmp.path().join("dir/missing").as_os_str())
             .unwrap();
         validator.validate(OsStr::new("-")).unwrap();
-        assert!(validator
-            .validate(tmp.path().join("dir/").as_os_str())
-            .is_err());
-        assert!(validator
-            .validate(tmp.path().join("missing-dir/").as_os_str())
-            .is_err());
+        assert!(
+            validator
+                .validate(tmp.path().join("dir/").as_os_str())
+                .is_err()
+        );
+        assert!(
+            validator
+                .validate(tmp.path().join("missing-dir/").as_os_str())
+                .is_err()
+        );
     }
 
     #[test]
@@ -213,12 +219,16 @@ mod tests {
         validator
             .validate(tmp.path().join("file").as_os_str())
             .unwrap();
-        assert!(validator
-            .validate(tmp.path().join("dir/missing").as_os_str())
-            .is_err());
-        assert!(validator
-            .validate(tmp.path().join("dir/").as_os_str())
-            .is_err());
+        assert!(
+            validator
+                .validate(tmp.path().join("dir/missing").as_os_str())
+                .is_err()
+        );
+        assert!(
+            validator
+                .validate(tmp.path().join("dir/").as_os_str())
+                .is_err()
+        );
     }
 
     #[test]
@@ -231,9 +241,11 @@ mod tests {
         validator
             .validate(tmp.path().join("dir/missing").as_os_str())
             .unwrap();
-        assert!(validator
-            .validate(tmp.path().join("file").as_os_str())
-            .is_err());
+        assert!(
+            validator
+                .validate(tmp.path().join("file").as_os_str())
+                .is_err()
+        );
         assert!(validator.validate(OsStr::new("-")).is_err());
     }
 

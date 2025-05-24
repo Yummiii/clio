@@ -70,7 +70,7 @@ impl Error {
     }
 
     pub(crate) fn other(message: &'static str) -> Self {
-        Error::Io(IoError::new(ErrorKind::Other, message))
+        Error::Io(IoError::other(message))
     }
 
     io_error!(seek_error, ESPIPE, ERROR_BROKEN_PIPE => (Other, "Cannot seek on stream"));

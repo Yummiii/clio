@@ -110,9 +110,7 @@ fn assert_is_dir(path: &Path) -> Result<()> {
 /// # Ok::<(), clio::Error>(())
 /// ```
 pub fn has_extension<S: AsRef<OsStr>>(ext: S) -> impl Fn(&ClioPath) -> bool {
-    {
-        move |path| path.extension() == Some(ext.as_ref())
-    }
+    move |path| path.extension() == Some(ext.as_ref())
 }
 
 /// A predicate for filtering files that accepts any file
@@ -129,11 +127,6 @@ pub fn has_extension<S: AsRef<OsStr>>(ext: S) -> impl Fn(&ClioPath) -> bool {
 pub fn any_file(_: &ClioPath) -> bool {
     true
 }
-
-#[cfg(test)]
-#[cfg(feature = "clap-parse")]
-/// Trait to throw compile errors if a type will not be supported by clap
-trait Parseable: Clone + Sync + Send {}
 
 macro_rules! impl_try_from {
     ($struct_name:ident) => {
@@ -269,10 +262,10 @@ pub(crate) use impl_try_from;
 mod tests {
     use super::*;
     use std::{
-        fs::{create_dir, set_permissions, write, File},
+        fs::{File, create_dir, set_permissions, write},
         io::Read,
     };
-    use tempfile::{tempdir, TempDir};
+    use tempfile::{TempDir, tempdir};
 
     fn set_mode(path: &Path, mode: u32) -> Result<()> {
         let mut perms = path.metadata()?.permissions();
@@ -291,8 +284,8 @@ mod tests {
 
     fn temp() -> TempDir {
         let tmp = tempdir().expect("could not make tmp dir");
-        create_dir(&tmp.path().join("dir")).expect("could not create dir");
-        write(&tmp.path().join("file"), "contents").expect("could not create dir");
+        create_dir(tmp.path().join("dir")).expect("could not create dir");
+        write(tmp.path().join("file"), "contents").expect("could not create dir");
         let ro = tmp.path().join("ro");
         write(&ro, "contents").expect("could not create ro");
         set_mode(&ro, 0o400).expect("could make ro read only");
@@ -338,7 +331,7 @@ mod tests {
                 f.read_to_string(&mut s)?;
                 Ok(s)
             });
-            let raw_w = write(&tmp_w.path().join(path), "junk");
+            let raw_w = write(tmp_w.path().join(path), "junk");
 
             let in_path_err = InputPath::new(&tmp_path);
             let open_err = Input::new(&tmp_path);

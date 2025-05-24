@@ -1,0 +1,14 @@
+{
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "cargo": {
+          "features": ["clap-parse", "http-ureq"]
+        },
+        "check": {
+          "features": ["clap-parse", "http-ureq"]
+        }
+      }
+    }
+  }
+}
